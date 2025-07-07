@@ -2,12 +2,13 @@ import cv2
 import numpy as np
 
 # 実際のボールの直径 [m]（例: 6cm）
-real_ball_diameter = 0.06  
+real_ball_diameter = 0.065 
 
-# カメラの焦点距離 [pixel]（キャリブレーションして算出する。仮に800とする）
-focal_length = 800  
+# カメラの焦点距離 [pixel]（キャリブレーションして算出する。）
+focal_length =  455 
 
-cap = cv2.VideoCapture(0)
+DEVICE = '/dev/video4'  
+cap = cv2.VideoCapture(DEVICE)
 
 # HSV色範囲（赤・青・黄）
 lower_red = np.array([145, 120, 120])
