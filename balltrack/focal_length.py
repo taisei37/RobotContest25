@@ -1,51 +1,37 @@
 import cv2
 import numpy as np
 
-# 🎯 ボールの実際の直径 [m]
-real_ball_diameter = 0.06
+# 🎯 ボールの実際の直径（単位：メートル）
+REAL_BALL_DIAMETER = 0.065 
 
-# 🎯 実測した距離 [m]（定規などで測って入力）
-measured_distance = float(input("実測したカメラとボールの距離 [m] を入力してください："))
-
-# 使用カメラのデバイス指定
+# 📷 カメラデバイス
 DEVICE = '/dev/video4'
-cap = cv2.VideoCapture(DEVICE)
 
-if not cap.isOpened():
-    print(f"カメラ {DEVICE} を開けませんでした。")
-    exit()
+# 🔍 赤色のHSV範囲（より一般的な範囲に修正）
+LOWER_RED = np.array([165, 105, 115])
+UPPER_RED = np.array([175, 255, 255])
 
-# 🎨 赤色のHSV範囲（指定された値）
-lower_red = np.array([100, 105, 120])
-upper_red = np.array([120, 225, 255])
-# ノイズ除去用カーネル
-kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+# 🔧 ノイズ除去カーネル
+KERNEL = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 
-print("赤いボールを中央に映してください。ESCキーで終了します。")
+def calculate_focal_length(image_diameter_px, real_diameter_m, distance_m):
+    return (image_diameter_px * distance_m) / real_diameter_m
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-
-    # 前処理
+def detect_largest_red_circle(frame):
     blurred = cv2.medianBlur(frame, 11)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
-    # 赤色のマスク生成＋ノイズ除去
-    mask_red = cv2.inRange(hsv, lower_red, upper_red)
-    mask_cleaned = cv2.morphologyEx(mask_red, cv2.MORPH_OPEN, kernel, iterations=2)
+    mask = cv2.inRange(hsv, LOWER_RED, UPPER_RED)
+    cleaned = cv2.morphologyEx(mask, cv2.MORPH_OPEN, KERNEL, iterations=2)
 
-    # エッジ検出して輪郭を抽出
-    edges = cv2.Canny(mask_cleaned, 50, 150)
+    edges = cv2.Canny(cleaned, 50, 150)
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     max_radius = 0
     max_center = None
 
     for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if area < 300:
+        if cv2.contourArea(cnt) < 300:
             continue
 
         (x, y), radius = cv2.minEnclosingCircle(cnt)
@@ -53,26 +39,57 @@ while True:
             max_radius = radius
             max_center = (int(x), int(y))
 
-    if max_center is not None and max_radius > 0:
-        image_diameter = 2 * max_radius
-        focal_length = (image_diameter * measured_distance) / real_ball_diameter
+    if max_center:
+        return 2 * max_radius, max_center, int(max_radius)
+    else:
+        return None, None, None
 
-        # 結果を描画
-        cv2.circle(frame, max_center, int(max_radius), (0, 0, 255), 2)
-        cv2.circle(frame, max_center, 5, (0, 0, 0), -1)
+def main():
+    measured_distance = float(input("📏 実測したカメラとボールの距離 [m]："))
 
-        cv2.putText(frame, f"Image Diameter: {image_diameter:.2f}px", (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-        cv2.putText(frame, f"Focal Length: {focal_length:.2f}px", (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    cap = cv2.VideoCapture(DEVICE)
+    if not cap.isOpened():
+        print(f"❌ カメラ {DEVICE} を開けませんでした。")
+        return
 
-        print(f"画像上の直径: {image_diameter:.2f} px")
-        print(f"推定焦点距離: {focal_length:.2f} px")
+    print("📸 赤いボールを中央に映してください。ESCキーで終了します。")
 
-    cv2.imshow("Red Ball Detection (Calibration)", frame)
-    if cv2.waitKey(1) == 27:  # ESCキー
-        break
+    focal_lengths = []
 
-cap.release()
-cv2.destroyAllWindows()
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        image_diameter, center, radius = detect_largest_red_circle(frame)
+
+        if image_diameter:
+            focal = calculate_focal_length(image_diameter, REAL_BALL_DIAMETER, measured_distance)
+            focal_lengths.append(focal)
+
+            cv2.circle(frame, center, radius, (0, 0, 255), 2)
+            cv2.circle(frame, center, 5, (0, 0, 0), -1)
+
+            cv2.putText(frame, f"Diameter: {image_diameter:.2f}px", (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            cv2.putText(frame, f"Focal Length: {focal:.2f}px", (10, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+
+        cv2.imshow(" Red Ball Detection (Calibration)", frame)
+
+        key = cv2.waitKey(30)
+        if key == 27:  # ESC
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    if focal_lengths:
+        avg_focal = np.mean(focal_lengths)
+        print(f"\n✅ 平均焦点距離: {avg_focal:.2f} px（{len(focal_lengths)}回の測定）")
+    else:
+        print("⚠️ 有効なボールが検出されませんでした。")
+
+if __name__ == '__main__':
+    main()
 
