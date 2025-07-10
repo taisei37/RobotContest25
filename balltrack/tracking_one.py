@@ -6,7 +6,7 @@ import time
 DEVICE = '/dev/video4'
 cap = cv2.VideoCapture('/dev/video4')
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 675)
 cap.set(cv2.CAP_PROP_FPS, 15)
 
 if not cap.isOpened():

@@ -15,7 +15,7 @@ if not cap.isOpened():
 
 # 実際のボール直径とカメラの焦点距離
 BALL_DIAMETER = 6.5 # cm
-FOCAL_LENGTH = 700  # px（キャリブレーションに応じて調整）
+FOCAL_LENGTH = 527.25  # px（キャリブレーションに応じて調整）
 
 # HSV色範囲（赤・青・黄）
 color_ranges = {
