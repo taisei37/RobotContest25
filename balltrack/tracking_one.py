@@ -13,9 +13,6 @@ if not cap.isOpened():
     print(f"カメラ {DEVICE} を開けませんでした")
     exit()
 
-# 実際のボール直径とカメラの焦点距離
-BALL_DIAMETER = 6.8  # cm
-FOCAL_LENGTH = 700  # px（キャリブレーションに応じて調整）
 
 # HSV色範囲（赤・青・黄）
 color_ranges = {
@@ -85,12 +82,6 @@ while True:
         cv2.putText(frame, f"{max_circle['color'].capitalize()} Ball Pos: {max_circle['center']}",
                     (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, draw_colors[max_circle["color"]], 2)
 
-        # 距離計算
-        pixel_diameter = max_circle["radius"] * 2
-        if pixel_diameter > 0:
-            distance = (BALL_DIAMETER * FOCAL_LENGTH) / pixel_diameter
-            cv2.putText(frame, f"Distance: {distance:.2f} cm",
-                        (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, draw_colors[max_circle["color"]], 2)
 
     # 画面表示
     cv2.imshow("Combined Mask", combined_mask)
