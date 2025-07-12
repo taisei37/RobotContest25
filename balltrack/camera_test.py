@@ -1,13 +1,8 @@
 import cv2
-import subprocess
 
-# MJPEGフォーマットに変更
-subprocess.run([
-    'v4l2-ctl', '-d', '/dev/video5',
-    '--set-fmt-video=width=1920,height=1080,pixelformat=MJPG'
-])
+DEVICE_INDEX = 4  # /dev/video4 に対応
 
-cap = cv2.VideoCapture('/dev/video5')
+cap = cv2.VideoCapture(DEVICE_INDEX)
 cap.set(cv2.CAP_PROP_FPS, 15)
 
 if not cap.isOpened():
@@ -22,7 +17,7 @@ while True:
 
     cv2.imshow('4K USB Camera', frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == 27:  # ESCキーで終了
         break
 
 cap.release()

@@ -4,7 +4,7 @@ import time
 
 # カメラ設定
 DEVICE = '/dev/video4'
-cap = cv2.VideoCapture('/dev/video4')
+cap = cv2.VideoCapture(DEVICE)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 cap.set(cv2.CAP_PROP_FPS, 15)
@@ -13,9 +13,11 @@ if not cap.isOpened():
     print(f"カメラ {DEVICE} を開けませんでした")
     exit()
 
-# 実際のボール直径とカメラの焦点距離
-BALL_DIAMETER = 6.75 # cm
-FOCAL_LENGTH = 685.0  # px（キャリブレーションに応じて調整）
+# ボールの実際の直径（cm）
+BALL_DIAMETER = 6.5
+
+# 初期推定用焦点距離（px/m）
+INITIAL_FOCAL = 685.0
 
 # HSV色範囲（赤・青・黄）
 color_ranges = {
@@ -24,6 +26,7 @@ color_ranges = {
     "yellow": (np.array([10, 70, 140]), np.array([40, 135, 255]))
 }
 
+# 描画色
 draw_colors = {
     "red": (0, 0, 255),
     "blue": (255, 0, 0),
@@ -31,6 +34,10 @@ draw_colors = {
 }
 
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+
+# 焦点距離を距離から推定する関数（2次近似式）
+def estimate_focal_length(d):
+    return -471.74 * d**2 + 490.33 * d + 565.46
 
 # 円の最大半径情報を更新する関数
 def update_max_circle(x, y, radius, color, current_max):
@@ -85,10 +92,14 @@ while True:
         cv2.putText(frame, f"{max_circle['color'].capitalize()} Ball Pos: {max_circle['center']}",
                     (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, draw_colors[max_circle["color"]], 2)
 
-        # 距離計算
+        # 距離計算（初期推定 + 近似式補正）
         pixel_diameter = max_circle["radius"] * 2
         if pixel_diameter > 0:
-            distance = (BALL_DIAMETER * FOCAL_LENGTH) / pixel_diameter
+            # 初期推定で距離を出す（固定焦点距離）
+            distance_estimate = (BALL_DIAMETER * INITIAL_FOCAL) / pixel_diameter / 100.0  # → mに変換
+            # 推定距離に応じた焦点距離で再計算
+            focal = estimate_focal_length(distance_estimate)
+            distance = (BALL_DIAMETER * focal) / pixel_diameter  # cm単位
             cv2.putText(frame, f"Distance: {distance:.2f} cm",
                         (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, draw_colors[max_circle["color"]], 2)
 
@@ -100,11 +111,11 @@ while True:
     fps = 1 / (time.time() - start_time)
     print(f"FPS: {fps:.2f}", end='\r')
 
-    time.sleep(0.1)  # ← これを適切に配置！
+    time.sleep(0.1)
 
-    if cv2.waitKey(1) & 0xFF == 27:
+    if cv2.waitKey(1) & 0xFF == 27:  # ESCキーで終了
         break
-
 
 cap.release()
 cv2.destroyAllWindows()
+

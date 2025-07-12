@@ -4,10 +4,17 @@ import time
 
 # --- ユーザー設定部分 ---
 DEVICE = '/dev/video4'
-KNOWN_DISTANCE = 6.3   # ボールまでの既知の距離 [cm]
-BALL_DIAMETER = 6.5     # ボールの実直径 [cm]
+
+# 実行時にユーザーから距離を入力
+try:
+    KNOWN_DISTANCE = float(input("ボールまでの既知の距離を [m] 単位で入力してください（例: 0.5）: "))
+except ValueError:
+    print("数値を正しく入力してください。例: 0.5")
+    exit()
+
+BALL_DIAMETER = 0.067   # ボールの実直径 [m]
 SAMPLES = 30            # サンプリング数
-CALIB_COLOR = 'red'     # キャリブレーションに使う色（'red','blue','yellow'）
+CALIB_COLOR = 'red'     # キャリブレーションに使う色
 
 # 赤色用HSV範囲（必要に応じて調整）
 color_ranges = {
@@ -87,6 +94,6 @@ focal_length = (avg_pixel_diam * KNOWN_DISTANCE) / BALL_DIAMETER
 print(f"----- キャリブレーション結果 -----")
 print(f"サンプル数       : {len(pixel_diams)}")
 print(f"平均画素直径     : {avg_pixel_diam:.2f} px")
-print(f"計算された焦点距離: {focal_length:.2f} px")
+print(f"計算された焦点距離: {focal_length:.2f} px/m")
 print("プログラム内の FOCAL_LENGTH 定数をこの値に置き換えてください。")
 
