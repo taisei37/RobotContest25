@@ -3,8 +3,7 @@ import numpy as np
 import time
 
 # カメラ設定
-DEVICE = '/dev/video4'
-cap = cv2.VideoCapture('/dev/video4')
+cap = cv2.VideoCapture(1)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 675)
 cap.set(cv2.CAP_PROP_FPS, 15)

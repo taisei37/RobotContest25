@@ -1,6 +1,6 @@
 import cv2
 
-DEVICE_INDEX = 4  # /dev/video4 に対応
+DEVICE_INDEX = 1 # /dev/video4 に対応
 
 cap = cv2.VideoCapture(DEVICE_INDEX)
 cap.set(cv2.CAP_PROP_FPS, 15)
