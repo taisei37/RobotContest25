@@ -16,7 +16,7 @@ cv2.createTrackbar("V Min", "Controls", 0, 255, nothing)
 cv2.createTrackbar("V Max", "Controls", 255, 255, nothing)
 
 # カメラ起動
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(4)
 if not cap.isOpened():
     print("カメラを開けません")
     exit()
